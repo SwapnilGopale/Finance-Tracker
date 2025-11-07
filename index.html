@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML/JS Finance Manager</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Define the 'Inter' font and apply it */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* --- Print Styles for PDF Export --- */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            /* Reset styles for printing */
+            body {
+                background-color: #fff !important;
+            }
+            main {
+                padding-top: 0 !important;
+                margin-top: 0 !important;
+            }
+            .shadow-lg {
+                box-shadow: none !important;
+                border: 1px solid #ddd !important;
+            }
+            .bg-white, .bg-gray-50 {
+                background-color: #fff !important;
+            }
+            /* Ensure text is visible and colors are simple */
+            .text-gray-500, .text-gray-700, .text-gray-800, .text-gray-900 {
+                color: #000 !important;
+            }
+            .text-green-600 { color: #16a34a !important; }
+            .text-red-600 { color: #dc2626 !important; }
+            .text-blue-600 { color: #2563eb !important; }
+            .border-l-4 {
+               border-color: #aaa !important; /* Simplify border */
+            }
+            #transaction-list-container {
+                max-height: none !important; /* Remove height limit for printing */
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <header class="bg-white shadow-sm no-print">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <h1 class="text-3xl font-bold text-blue-700">
+                HTML/JS Finance Manager
+            </h1>
+            <button
+                onclick="window.print()"
+                class="no-print flex items-center space-x-2 p-2 px-4 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                title="Print or Save as PDF"
+            >
+                <!-- Printer Icon SVG (Lucide-like) -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12V9H6z"/><path d="M17 14v4"/></svg>
+                <span>Export Report (PDF)</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+        <!-- Summary Section -->
+        <section class="mb-8">
+            <div id="summary-container" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Summary cards will be rendered here by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Main Content Section (Form & List) -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Column 1: Add Transaction Form -->
+            <aside id="form-container" class="no-print">
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">Add New Transaction</h2>
+                    <form id="transaction-form" class="space-y-4">
+                        <!-- Description Input -->
+                        <div>
+                            <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                            <input
+                                id="description"
+                                type="text"
+                                placeholder="e.g. Salary, Groceries..."
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                required
+                            />
+                        </div>
+
+                        <!-- Amount Input -->
+                        <div>
+                            <label for="amount" class="block text-sm font-medium text-gray-700">Amount</label>
+                            <input
+                                id="amount"
+                                type="number"
+                                step="0.01"
+                                min="0.01"
+                                placeholder="0.00"
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                required
+                            />
+                        </div>
+
+                        <!-- Type Selector -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Type</label>
+                            <div class="mt-1 grid grid-cols-2 gap-2" id="type-selector">
+                                <button
+                                    type="button"
+                                    id="type-income"
+                                    class="px-4 py-2 rounded-md text-sm font-medium bg-green-600 text-white transition-colors"
+                                    data-type="income"
+                                >
+                                    Income
+                                </button>
+                                <button
+                                    type="button"
+                                    id="type-expense"
+                                    class="px-4 py-2 rounded-md text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                                    data-type="expense"
+                                >
+                                    Expense
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button
+                            type="submit"
+                            class="w-full flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 font-medium"
+                        >
+                            <!-- Plus Icon SVG -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M12 5v14M5 12h14"/></svg>
+                            Add Transaction
+                        </button>
+                    </form>
+                </div>
+            </aside>
+
+            <!-- Column 2: Transaction History -->
+            <article>
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">Transaction History</h2>
+                    <ul id="transaction-list-container" class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                        <!-- Transactions will be rendered here by JavaScript -->
+                    </ul>
+                    <p id="no-transactions-message" class="text-gray-500 text-center py-4 hidden">No transactions yet.</p>
+                </div>
+            </article>
+        </section>
+    </main>
+
+    <script>
+        // --- Core Application Logic (Plain JavaScript) ---
+
+        let currentType = 'income'; // Tracks the currently selected transaction type
+
+        /**
+         * Formats a number as currency (USD).
+         * @param {number} amount - The number to format.
+         * @returns {string} A string like "$1,234.56".
+         */
+        const formatCurrency = (amount) => {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+            }).format(amount);
+        };
+
+        /**
+         * Saves transactions to localStorage.
+         * @param {Array<Object>} transactions - The array of Transaction objects to save.
+         */
+        const saveTransactions = (transactions) => {
+            localStorage.setItem('finance_transactions', JSON.stringify(transactions));
+        };
+
+        /**
+         * Gets transactions from localStorage.
+         * @returns {Array<Object>} An array of Transaction objects.
+         */
+        const getSavedTransactions = () => {
+            const saved = localStorage.getItem('finance_transactions');
+            if (saved) {
+                try {
+                    return JSON.parse(saved);
+                } catch (e) {
+                    console.error("Failed to parse transactions from localStorage", e);
+                    return [];
+                }
+            }
+            return [];
+        };
+
+        // Initialize state
+        let transactions = getSavedTransactions();
+
+        // --- DOM Rendering Functions ---
+
+        /**
+         * Renders the summary cards (Income, Expense, Balance).
+         */
+        const renderSummary = () => {
+            const container = document.getElementById('summary-container');
+            if (!container) return;
+
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            transactions.forEach(tx => {
+                if (tx.type === 'income') {
+                    totalIncome += tx.amount;
+                } else {
+                    totalExpense += tx.amount;
+                }
+            });
+
+            const balance = totalIncome - totalExpense;
+
+            // Define card data (using SVG helpers where needed for icons)
+            const summaryData = [
+                {
+                    title: 'Total Income',
+                    amount: totalIncome,
+                    color: 'green-600',
+                    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
+                },
+                {
+                    title: 'Total Expense',
+                    amount: totalExpense,
+                    color: 'red-600',
+                    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>',
+                },
+                {
+                    title: 'Current Balance',
+                    amount: balance,
+                    color: balance >= 0 ? 'blue-600' : 'red-600',
+                    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M21 12V7H5a2 2 0 0 1 0-4h16"/><path d="M3 5v14a2 2 0 0 0 2 2h16"/><path d="M18 15h-8"/><path d="M12 18v-6"/></svg>',
+                },
+            ];
+
+            container.innerHTML = summaryData.map(data => `
+                <div class="bg-white p-6 rounded-xl shadow-lg flex items-center space-x-4">
+                    <div class="p-3 rounded-full text-${data.color} bg-${data.color} bg-opacity-10">
+                        ${data.icon}
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">${data.title}</p>
+                        <p class="text-2xl font-semibold text-${data.color}">
+                            ${formatCurrency(data.amount)}
+                        </p>
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        /**
+         * Renders the list of transactions.
+         */
+        const renderTransactionList = () => {
+            const listContainer = document.getElementById('transaction-list-container');
+            const message = document.getElementById('no-transactions-message');
+            if (!listContainer || !message) return;
+
+            // Sort by date (newest first)
+            const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (sortedTransactions.length === 0) {
+                listContainer.innerHTML = '';
+                message.classList.remove('hidden');
+                return;
+            }
+
+            message.classList.add('hidden');
+
+            listContainer.innerHTML = sortedTransactions.map(tx => {
+                const isIncome = tx.type === 'income';
+                const sign = isIncome ? '+' : '-';
+                const borderClass = isIncome ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500';
+                const textClass = isIncome ? 'text-green-600' : 'text-red-600';
+                const dateString = new Date(tx.date).toLocaleDateString();
+
+                return `
+                    <li class="flex items-center justify-between p-4 rounded-lg shadow-sm ${borderClass} bg-gray-50">
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-900">${tx.description}</p>
+                            <p class="text-sm text-gray-500">${dateString}</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="font-semibold ${textClass}">
+                                ${sign}${formatCurrency(tx.amount)}
+                            </span>
+                            <button
+                                onclick="deleteTransaction('${tx.id}')"
+                                class="no-print text-gray-400 hover:text-red-600 p-1 rounded-full hover:bg-red-100 transition-colors"
+                                aria-label="Delete transaction"
+                            >
+                                <!-- Trash Icon SVG -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M14 6V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+                            </button>
+                        </div>
+                    </li>
+                `;
+            }).join('');
+        };
+
+        /**
+         * Re-renders the entire application (Summary and List).
+         */
+        const renderApp = () => {
+            renderSummary();
+            renderTransactionList();
+            saveTransactions(transactions); // Always save after a render/update cycle
+        };
+
+        // --- Event Handlers ---
+
+        /**
+         * Deletes a transaction by ID and updates the state.
+         * Exposed globally for use in `onclick` in HTML.
+         * @param {string} id - The ID of the transaction to delete.
+         */
+        window.deleteTransaction = (id) => {
+            transactions = transactions.filter(tx => tx.id !== id);
+            renderApp();
+        };
+
+        /**
+         * Handles form submission to add a new transaction.
+         * @param {Event} e - The form submit event.
+         */
+        const handleAddTransaction = (e) => {
+            e.preventDefault();
+
+            const descriptionInput = document.getElementById('description');
+            const amountInput = document.getElementById('amount');
+
+            const description = descriptionInput.value.trim();
+            const amount = parseFloat(amountInput.value);
+
+            if (!description || isNaN(amount) || amount <= 0) {
+                // Using a non-alert message box would be better, but sticking to prompt rules
+                console.error("Validation failed: Please enter a valid description and a positive amount.");
+                return;
+            }
+
+            const newTransaction = {
+                id: crypto.randomUUID(),
+                description,
+                amount,
+                type: currentType,
+                date: new Date().toISOString(),
+            };
+
+            transactions.push(newTransaction);
+
+            // Reset form fields
+            descriptionInput.value = '';
+            amountInput.value = '';
+
+            // Reset type selector to default (income) visually and logically
+            document.getElementById('type-income').click();
+
+            renderApp();
+        };
+
+        /**
+         * Handles changing the transaction type selector state.
+         * @param {string} type - 'income' or 'expense'.
+         * @param {HTMLElement} activeBtn - The button that was clicked.
+         * @param {HTMLElement} inactiveBtn - The other button.
+         */
+        const setTransactionType = (type, activeBtn, inactiveBtn) => {
+            currentType = type;
+
+            const activeColor = type === 'income' ? 'bg-green-600' : 'bg-red-600';
+            const inactiveColor = type === 'income' ? 'bg-red-600' : 'bg-green-600';
+
+            // Apply active styles to the clicked button
+            activeBtn.classList.remove('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200', inactiveColor);
+            activeBtn.classList.add(activeColor, 'text-white');
+
+            // Apply inactive styles to the other button
+            inactiveBtn.classList.remove(activeColor, 'text-white');
+            inactiveBtn.classList.add('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
+        };
+
+        // --- Initialization ---
+
+        window.onload = () => {
+            // 1. Setup Form Event Listener
+            document.getElementById('transaction-form').addEventListener('submit', handleAddTransaction);
+
+            // 2. Setup Type Selector Events
+            const incomeBtn = document.getElementById('type-income');
+            const expenseBtn = document.getElementById('type-expense');
+
+            incomeBtn.addEventListener('click', () => setTransactionType('income', incomeBtn, expenseBtn));
+            expenseBtn.addEventListener('click', () => setTransactionType('expense', expenseBtn, incomeBtn));
+
+            // Ensure initial state is reflected
+            setTransactionType(currentType, incomeBtn, expenseBtn);
+
+            // 3. Initial Render
+            renderApp();
+        };
+
+    </script>
+</body>
+</html>
